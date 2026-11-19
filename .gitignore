@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+roi.json
+debug_samples/
+kolejka.json
+lektor.log*
+kolejka.json.*.tmp
