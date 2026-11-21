@@ -1,0 +1,8 @@
+# Pliki .bat muszą mieć końce linii Windows (CRLF) – także w paczce ZIP z GitHuba.
+# Bez konwersji: repozytorium przechowuje je dokładnie tak, jak są.
+*.bat -text
+*.cmd -text
+
+# Modele i głosy: dane, bez zmian końców linii
+modele/** -text
+glosy/** -text

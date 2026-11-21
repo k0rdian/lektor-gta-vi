@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lektor GTA VI v2 · test</title>
+<style>
+  :root {
+    --bg: #0e1014; --panel: #161920; --pole: #0f1218; --linia: #262b36;
+    --tekst: #e8eaef; --szary: #9aa3b2; --akcent: #ff7a2f;
+    --ok: #3ecf8e; --uwaga: #f5b84a; --blad: #ff6161;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--tekst); }
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px;
+           padding: 12px 18px; background: rgba(14, 16, 20, .96); border-bottom: 1px solid var(--linia); }
+  header h1 { margin: 0; font-size: 16px; font-weight: 650; }
+  header .pod { color: var(--szary); font-size: 12px; }
+  .chipy { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+  .chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--linia); background: #1c2029;
+          color: var(--szary); font-size: 12px; white-space: nowrap; }
+  .chip.ok { color: var(--ok); border-color: #1d5a42; }
+  .chip.uwaga { color: var(--uwaga); border-color: #6b5222; }
+  .chip.blad { color: var(--blad); border-color: #6b2a2a; }
+  button { font: inherit; color: var(--tekst); background: #232836; border: 1px solid var(--linia);
+           border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: #3d4559; }
+  button.glowny { background: var(--akcent); border-color: var(--akcent); color: #121212; font-weight: 650; min-width: 96px; }
+  button.stop { background: var(--blad); border-color: var(--blad); color: #121212; font-weight: 650; min-width: 96px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 16px; padding: 16px 18px; }
+  section { background: var(--panel); border: 1px solid var(--linia); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  section h2 { margin: 0 0 10px; color: var(--szary); font-size: 12px; font-weight: 600;
+               text-transform: uppercase; letter-spacing: .06em; }
+  section h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  #ramka { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden;
+           cursor: crosshair; user-select: none; }
+  #podglad { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  #roi, #zazn { position: absolute; pointer-events: none; border: 2px solid var(--akcent); box-sizing: border-box; }
+  #roi { box-shadow: 0 0 0 9999px rgba(0, 0, 0, .28); }
+  #zazn { border-style: dashed; display: none; }
+  #pusto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+           text-align: center; padding: 24px; color: var(--szary); }
+  body.upuszczanie #ramka { outline: 3px dashed var(--akcent); outline-offset: -3px; }
+  .wiersz { display: flex; align-items: center; gap: 8px; }
+  .miedzy { justify-content: space-between; }
+  .szary { color: var(--szary); }
+  .male { font-size: 12px; }
+  .odczyt { min-height: 28px; font-size: 18px; }
+  label { display: block; margin: 10px 0 4px; color: var(--szary); font-size: 12px; }
+  label .wart { float: right; color: var(--tekst); font-variant-numeric: tabular-nums; }
+  select, input[type=text], input[type=number] { width: 100%; padding: 7px 9px; font: inherit; color: var(--tekst);
+           background: var(--pole); border: 1px solid var(--linia); border-radius: 8px; }
+  input[type=range] { width: 100%; accent-color: var(--akcent); }
+  .check { display: flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--tekst); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--linia); }
+  th { color: var(--szary); font-size: 12px; font-weight: 600; }
+  .liczba { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .staty { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .staty div { padding: 8px; background: var(--pole); border: 1px solid var(--linia); border-radius: 8px; }
+  .staty b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .staty span { color: var(--szary); font-size: 11px; }
+  pre#dziennik { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap;
+                 font: 12px/1.5 ui-monospace, Consolas, monospace; color: #c9cfdb; }
+  #kamery button { display: block; width: 100%; margin-top: 6px; text-align: left; }
+  #wynik-odczytu { margin-top: 10px; padding: 10px; background: var(--pole); border: 1px solid var(--linia);
+                   border-radius: 8px; display: none; font-size: 13px; }
+  [hidden] { display: none !important; }
+  #toast { position: fixed; right: 18px; bottom: 18px; max-width: 460px; padding: 10px 14px; z-index: 10;
+           background: #2a1717; border: 1px solid var(--blad); border-radius: 10px; color: var(--tekst);
+           font-size: 13px; box-shadow: 0 6px 24px rgba(0,0,0,.4); display: none; }
+  #toast b { color: var(--blad); }
+  .diag { margin-top: 6px; color: var(--szary); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .diag .odrz { color: var(--blad); }
+  input[type=range]:disabled { opacity: .35; }
+  .pominiete { display: block; color: var(--szary); font-size: 11px; }
+  .silnik { font-size: 10px; color: var(--szary); text-transform: uppercase; letter-spacing: .04em; }
+  .ramka-info { margin-top: 10px; padding: 10px; background: var(--pole); border: 1px solid var(--linia);
+                border-radius: 8px; font-size: 13px; }
+  .ramka-info .ost { color: var(--uwaga); }
+  .glos-wlasny { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--linia); }
+  .glos-wlasny .nazwa { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .glos-wlasny button { padding: 4px 8px; font-size: 12px; }
+  .glos-wlasny.aktywny .nazwa { color: var(--ok); }
+  audio { width: 100%; height: 34px; margin-top: 8px; }
+  input[type=file] { width: 100%; font: inherit; color: var(--szary); font-size: 12px; }
+  button.nagrywa { background: var(--blad); border-color: var(--blad); color: #121212; font-weight: 650; }
+  .wskazowka { color: var(--szary); font-size: 12px; margin-top: 6px; }
+  a { color: var(--akcent); }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Lektor GTA VI v2</h1>
+    <div class="pod">test: PaddleOCR (silnik MNN) + Piper TTS / Chatterbox</div>
+  </div>
+  <div class="chipy">
+    <span class="chip" id="c-ocr">OCR…</span>
+    <span class="chip" id="c-glos">Głos…</span>
+    <span class="chip" id="c-zrodlo">Zatrzymane</span>
+    <span class="chip uwaga" id="c-audio" hidden>Brak wyjścia audio – czasy liczone „na niby”</span>
+  </div>
+  <button id="b-start" class="glowny">▶ Start</button>
+</header>
+
+<main>
+  <div>
+    <section>
+      <h2>Podgląd</h2>
+      <div id="ramka">
+        <img id="podglad" alt="">
+        <div id="pusto">Wybierz źródło obrazu po prawej i kliknij Start.<br>Możesz też upuścić tutaj zrzut ekranu z gry.</div>
+        <div id="roi"></div>
+        <div id="zazn"></div>
+      </div>
+      <div class="wiersz miedzy" style="margin-top:10px">
+        <span class="szary male">Przeciągnij myszką po podglądzie, żeby zaznaczyć obszar napisów – szeroko, bo napisy GTA VI są wyśrodkowane i mają różną długość. Zielone ramki = tekst przyjęty, żółte = za niska pewność, czerwone = odrzucony (tablica, ruch, poza środkiem).</span>
+        <span class="wiersz"><button id="b-obszar-gta" title="Środek dołu ekranu: x 16–84%, y 74–96,5% (omija minimapę i nazwy ulic)">Obszar GTA VI</button><button id="b-odczytaj">Odczytaj teraz</button><button id="b-pomin" title="Pomija tylko kwestię, którą właśnie słychać – reszta kolejki zostaje">Pomiń kwestię</button><button id="b-ucisz" title="Przerywa bieżącą kwestię i czyści całą kolejkę">Ucisz lektora</button><button id="b-nagraj" title="Nagrywa obraz ze źródła do folderu nagrania\ (MP4). Potem odtworzysz go jako „Plik wideo” i sprawdzisz ustawienia na tej samej scenie.">⏺ Nagraj</button></span>
+      </div>
+      <div id="wynik-odczytu"></div>
+    </section>
+
+    <section>
+      <h2>Na żywo</h2>
+      <label>OCR widzi teraz <span class="wart" id="odczyt-ms"></span></label>
+      <div class="odczyt" id="odczyt">—</div>
+      <div class="diag" id="diag"></div>
+      <label>Lektor przeczytał ostatnio <span class="wart" id="kolejka-info"></span></label>
+      <div class="odczyt" id="ostatnie">—</div>
+    </section>
+
+    <section>
+      <h2>Historia <small>· „Razem” = od klatki, na której zmienił się napis, do pierwszego dźwięku lektora · szary dopisek = linie pominięte, bo już były przeczytane</small></h2>
+      <table>
+        <thead><tr><th>Czas</th><th>Kwestia</th><th class="liczba">OCR</th><th class="liczba">Głos</th><th class="liczba">Razem</th></tr></thead>
+        <tbody id="historia"><tr><td colspan="5" class="szary">Jeszcze nic nie przeczytano.</td></tr></tbody>
+      </table>
+    </section>
+  </div>
+
+  <aside>
+    <section>
+      <h2>Opóźnienia <small>(mediana z ostatnich 30)</small></h2>
+      <div class="staty">
+        <div><b id="s-razem">–</b><span>razem, ms</span></div>
+        <div><b id="s-ocr">–</b><span>OCR, ms</span></div>
+        <div><b id="s-tts">–</b><span>głos, ms</span></div>
+        <div><b id="s-ile">0</b><span>kwestii</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Źródło obrazu</h2>
+      <select data-ust="zrodlo">
+        <option value="kamera">Karta przechwytująca (Elgato) / kamera</option>
+        <option value="ekran">Ekran (np. okno podglądu OBS)</option>
+        <option value="plik">Plik wideo (nagrany gameplay)</option>
+        <option value="obraz">Obraz (zrzut ekranu)</option>
+      </select>
+      <div data-dla="kamera">
+        <label>Numer urządzenia</label>
+        <div class="wiersz">
+          <input type="number" min="0" max="20" data-ust="kamera_indeks" data-typ="int">
+          <button id="b-kamery" style="white-space:nowrap">Wykryj</button>
+        </div>
+        <div id="kamery"></div>
+        <label>Sterownik</label>
+        <select data-ust="kamera_backend">
+          <option value="dshow">DirectShow (zalecany)</option>
+          <option value="msmf">Media Foundation</option>
+          <option value="auto">Automatycznie</option>
+        </select>
+      </div>
+      <div data-dla="ekran">
+        <label>Numer monitora (1 = główny)</label>
+        <input type="number" min="1" max="8" data-ust="ekran_nr" data-typ="int">
+      </div>
+      <div data-dla="plik">
+        <label>Ścieżka do pliku wideo (np. C:\Filmy\gta.mp4)</label>
+        <input type="text" data-ust="plik_wideo">
+      </div>
+      <div data-dla="obraz">
+        <label>Obraz testowy (folder „testy”)</label>
+        <select data-ust="obraz" id="lista-obrazow"></select>
+      </div>
+    </section>
+
+    <section>
+      <h2>Głos lektora <small id="silnik-opis"></small></h2>
+      <label>Głos</label>
+      <select data-ust="glos" id="lista-glosow"></select>
+      <div id="opcje-chatterbox" hidden>
+        <label>Szybkość czy jakość</label>
+        <select data-ust="cb_tryb">
+          <option value="najszybszy">Najszybszy – głos rusza najwcześniej, nieco gorsza jakość</option>
+          <option value="zrownowazony">Zrównoważony (zalecany)</option>
+          <option value="jakosc">Najlepsza jakość – wolniejszy start</option>
+        </select>
+        <label>Model Chatterbox</label>
+        <select data-ust="cb_model" id="lista-modeli-cb"></select>
+        <label>Karta / procesor</label>
+        <select data-ust="cb_urzadzenie">
+          <option value="auto">Automatycznie (GPU, jeśli jest)</option>
+          <option value="cuda">Karta graficzna (CUDA)</option>
+          <option value="cpu">Procesor (bardzo wolno)</option>
+        </select>
+        <label>Ekspresja (emocje) <span class="wart" id="w-ekspresja"></span></label>
+        <input type="range" min="0.25" max="1.5" step="0.05" data-ust="cb_ekspresja" data-typ="float" data-pokaz="w-ekspresja">
+        <label title="cfg_weight: niżej = wolniej i spokojniej; 0 = bez akcentu z nagrania referencyjnego">Dopasowanie do nagrania (CFG) <span class="wart" id="w-cfg"></span></label>
+        <input type="range" min="0" max="1" step="0.05" data-ust="cb_cfg" data-typ="float" data-pokaz="w-cfg">
+        <label>Losowość (temperatura) <span class="wart" id="w-temperatura"></span></label>
+        <input type="range" min="0.3" max="1.2" step="0.05" data-ust="cb_temperatura" data-typ="float" data-pokaz="w-temperatura">
+        <div class="wskazowka" id="cb-info"></div>
+      </div>
+      <label>Tempo <span class="wart" id="w-predkosc"></span></label>
+      <input type="range" min="0.8" max="1.5" step="0.05" data-ust="predkosc" data-typ="float" data-pokaz="w-predkosc">
+      <label>Głośność <span class="wart" id="w-glosnosc"></span></label>
+      <input type="range" min="0.2" max="2" step="0.1" data-ust="glosnosc" data-typ="float" data-pokaz="w-glosnosc">
+      <label>Wyjście audio</label>
+      <select data-ust="urzadzenie_audio" data-typ="tekst-lub-nic" id="lista-audio"></select>
+      <div class="wskazowka" id="wyjscie-info"></div>
+      <label>Gdy pojawi się nowy napis, a lektor jeszcze mówi</label>
+      <select data-ust="polityka">
+        <option value="kolejka">Kolejka – przeczytaj wszystko po kolei (zalecane)</option>
+        <option value="dokoncz">Dokończ, potem czytaj tylko najnowszy</option>
+        <option value="przerwij">Przerwij i czytaj nowy</option>
+      </select>
+      <label class="check"><input type="checkbox" data-ust="przyspieszaj" data-typ="bool"> Przyspieszaj, gdy lektor zostaje w tyle (i skracaj pauzy)</label>
+      <label>Maksymalne tempo przy nadrabianiu <span class="wart" id="w-tempo-maks"></span></label>
+      <input type="range" min="1" max="2" step="0.05" data-ust="tempo_maks" data-typ="float" data-pokaz="w-tempo-maks">
+      <label>Test głosu</label>
+      <div class="wiersz">
+        <input type="text" id="test-tekst" value="Słuchaj, nie mamy dużo czasu. Gliny będą tu za pięć minut.">
+        <button id="b-test">Czytaj</button>
+      </div>
+    </section>
+
+    <section id="sekcja-wlasny-glos">
+      <h2>Własny głos (Chatterbox)</h2>
+      <div id="cb-brak" class="szary male" hidden>Chatterbox nie jest zainstalowany. Uruchom <b>instaluj_chatterbox.bat</b> (ok. 10 GB: PyTorch z CUDA + modele) i uruchom aplikację ponownie.</div>
+      <div id="cb-tworzenie">
+        <div class="szary male">Wybierz nagranie głosu (mp3, wav, m4a, ogg, flac, a nawet mp4) albo upuść je na stronę. Najlepiej 15–60 s czystej mowy jednej osoby, bez muzyki i efektów, najlepiej po polsku. Aplikacja sama wybierze najlepsze 10 s, a „tożsamość” głosu policzy z całego nagrania.</div>
+        <label>Plik z nagraniem</label>
+        <input type="file" id="plik-glosu" accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.opus,.flac,.aac,.wma,.mp4,.mkv,.webm,.mov">
+        <label>Nazwa głosu</label>
+        <input type="text" id="nazwa-glosu" placeholder="np. Mój lektor">
+        <div class="wiersz">
+          <div style="flex:1"><label>Fragment od (s, opcjonalnie)</label><input type="number" id="glos-od" min="0" step="0.5" placeholder="auto"></div>
+          <div style="flex:1"><label>do (s)</label><input type="number" id="glos-do" min="0" step="0.5" placeholder="auto"></div>
+        </div>
+        <div class="wiersz" style="margin-top:10px">
+          <button id="b-utworz-glos" class="glowny" style="flex:1">Utwórz głos</button>
+        </div>
+        <div id="wynik-glosu" class="ramka-info" hidden></div>
+        <label>Twoje głosy</label>
+        <div id="lista-wlasnych" class="male"><span class="szary">Jeszcze żadnego.</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>OCR (PaddleOCR · MNN)</h2>
+      <label>Model</label>
+      <select data-ust="ocr_model" id="lista-modeli"></select>
+      <label>Minimalna pewność odczytu <span class="wart" id="w-pewnosc"></span></label>
+      <input type="range" min="0.3" max="0.95" step="0.05" data-ust="min_pewnosc" data-typ="float" data-pokaz="w-pewnosc">
+      <label>Czułość na zmianę napisu <span class="wart" id="w-czulosc"></span></label>
+      <input type="range" min="0.001" max="0.03" step="0.001" data-ust="czulosc" data-typ="float" data-pokaz="w-czulosc">
+      <label class="check"><input type="checkbox" data-ust="prog_auto" data-typ="bool"> Automatyczne wykrywanie tekstu (zalecane – widzi szare napisy GTA VI)</label>
+      <label>Próg jasności tekstu – tylko gdy wykrywanie automatyczne jest wyłączone <span class="wart" id="w-jasnosc"></span></label>
+      <input type="range" min="120" max="245" step="5" data-ust="jasnosc_tekstu" data-typ="int" data-pokaz="w-jasnosc" id="suwak-jasnosc">
+      <label class="check"><input type="checkbox" data-ust="auto_poszerzanie" data-typ="bool"> Poszerzaj obszar, gdy napis wychodzi poza ramkę</label>
+      <label class="check"><input type="checkbox" data-ust="synteza_wstepna" data-typ="bool"> Zaczynaj syntezę głosu już przy pierwszym odczycie (głos szybciej o czas stabilizacji; czyta dopiero po potwierdzeniu napisu)</label>
+      <label>Stabilizacja (ile zgodnych odczytów przed czytaniem)</label>
+      <select data-ust="stabilizacja" data-typ="int">
+        <option value="1">1 – najszybciej, czasem urywki</option>
+        <option value="2">2 – zalecane</option>
+        <option value="3">3 – najpewniej</option>
+      </select>
+      <label>Rozdzielczość wykrywania tekstu</label>
+      <select data-ust="ocr_rozdzielczosc" data-typ="int">
+        <option value="640">640 – szybciej</option>
+        <option value="960">960 – zalecane</option>
+        <option value="1280">1280 – drobny tekst</option>
+      </select>
+      <label class="check"><input type="checkbox" data-ust="usun_imiona" data-typ="bool"> Usuwaj imię mówiącego przed dwukropkiem</label>
+    </section>
+
+    <section>
+      <h2>Co czytać, a co pomijać</h2>
+      <label class="check"><input type="checkbox" data-ust="bez_powtorek" data-typ="bool"> Nie czytaj drugi raz linii, która już była przeczytana (gdy zmienia się tylko druga linia albo napisy się przesuwają)</label>
+      <label class="check"><input type="checkbox" data-ust="filtr_tablic" data-typ="bool"> Odrzucaj tablice rejestracyjne i tekst, który się przesuwa (przejeżdżające auta)</label>
+      <label class="check"><input type="checkbox" data-ust="tylko_srodek" data-typ="bool"> Czytaj tylko tekst na środku ekranu (napisy GTA VI są wyśrodkowane)</label>
+      <label class="check"><input type="checkbox" data-ust="filtr_ciemny" data-typ="bool"> Odrzucaj ciemny tekst na jasnym tle (eksperymentalne – może odrzucić napis na jasnym niebie bez tła)</label>
+      <label class="check"><input type="checkbox" data-ust="zapis_diagnostyki" data-typ="bool"> Zapisuj diagnostykę odczytów (wycinki obrazu: co przeczytano, co pominięto, co odrzucono)</label>
+      <div class="wskazowka"><a href="/diagnostyka" target="_blank">Otwórz diagnostykę odczytów ↗</a> <span id="diag-zapisane"></span></div>
+    </section>
+
+    <section>
+      <h2>Dziennik</h2>
+      <pre id="dziennik"></pre>
+    </section>
+  </aside>
+</main>
+
+<div id="toast" onclick="this.style.display='none'"></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+let stan = null;
+let ostatnieListy = "";
+let strumienAktywny = false;
+let bezOdbiorcy = 0;
+
+async function pobierz(sciezka) {
+  const r = await fetch(sciezka, { cache: "no-store" });
+  return r.json();
+}
+// zapytania, które można bezpiecznie ponowić, gdy połączenie się zerwie (np. przez filtr sieciowy)
+const POWTARZALNE = ["/api/ustawienia", "/api/stop", "/api/ucisz", "/api/odczytaj", "/api/kamery", "/api/nagrywanie", "/api/usun_glos"];
+// (Pomiń nie jest powtarzane – drugie kliknięcie pominęłoby kolejną kwestię)
+async function wyslij(sciezka, dane, naglowki) {
+  const opcje = { method: "POST", headers: naglowki || { "Content-Type": "application/json" } };
+  if (dane instanceof Blob) opcje.body = dane;
+  else if (dane !== undefined) opcje.body = JSON.stringify(dane);
+  let r;
+  for (let proba = 0; ; proba++) {
+    try { r = await fetch(sciezka, opcje); break; }
+    catch (e) {
+      if (proba >= 2 || !POWTARZALNE.includes(sciezka)) {
+        throw new Error("Brak połączenia z aplikacją (" + e.message + "). Czy okno konsoli jest otwarte?");
+      }
+      await new Promise((ok) => setTimeout(ok, 300));
+    }
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.ok === false) throw new Error(j.blad || ("HTTP " + r.status));
+  return j;
+}
+// błąd pokazujemy w rogu i nie blokujemy strony (alert() zatrzymywał odświeżanie i podgląd)
+let toastTimer = null;
+function pokazBlad(e) {
+  const t = $("#toast");
+  t.innerHTML = "<b>Błąd:</b> ";
+  t.appendChild(document.createTextNode(e && e.message ? e.message : String(e)));
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 7000);
+}
+
+// ---------- ustawienia <-> kontrolki
+function wartoscKontrolki(el) {
+  const typ = el.dataset.typ || "str";
+  if (el.type === "checkbox") return el.checked;
+  const v = el.value;
+  if (typ === "int") return parseInt(v, 10);
+  if (typ === "float") return parseFloat(v);
+  if (typ === "int-lub-nic") return v === "" ? null : parseInt(v, 10);
+  if (typ === "tekst-lub-nic") return v === "" ? null : v;
+  return v;
+}
+function ustawKontrolke(el, v) {
+  if (el === document.activeElement) return;
+  if (el.type === "checkbox") el.checked = !!v;
+  else el.value = (v === null || v === undefined) ? "" : String(v);
+  if (el.dataset.pokaz) $("#" + el.dataset.pokaz).textContent = el.value;
+}
+$$("[data-ust]").forEach((el) => {
+  const zapisz = () => wyslij("/api/ustawienia", { [el.dataset.ust]: wartoscKontrolki(el) })
+    .then(odswiez).catch(pokazBlad);
+  el.addEventListener("change", zapisz);
+  if (el.type === "range") el.addEventListener("input", () => { $("#" + el.dataset.pokaz).textContent = el.value; });
+});
+
+function wypelnijSelect(sel, opcje, pusta) {
+  const obecna = sel.value;
+  sel.innerHTML = "";
+  if (pusta) sel.add(new Option(pusta, ""));
+  for (const o of opcje) sel.add(new Option(o.nazwa, o.id));
+  sel.value = obecna;
+}
+// lista głosów pogrupowana: Piper (procesor, szybki) / Chatterbox (GPU, klonowanie głosu)
+function wypelnijGlosy(sel, glosy) {
+  const obecna = sel.value;
+  sel.innerHTML = "";
+  const grupy = [["piper", "Piper – szybki, na procesorze"], ["chatterbox", "Chatterbox – karta graficzna, własny głos"]];
+  for (const [silnik, etykieta] of grupy) {
+    const lista = glosy.filter((g) => (g.silnik || "piper") === silnik);
+    if (!lista.length) continue;
+    const og = document.createElement("optgroup");
+    og.label = etykieta;
+    for (const g of lista) og.appendChild(new Option(g.nazwa + (g.pobrany ? "" : " – pobierze się"), g.id));
+    sel.appendChild(og);
+  }
+  sel.value = obecna;
+}
+
+// ---------- podgląd i zaznaczanie obszaru napisów
+const ramka = $("#ramka"), img = $("#podglad");
+function obszarObrazu() {
+  const r = ramka.getBoundingClientRect();
+  const nw = img.naturalWidth || 16, nh = img.naturalHeight || 9;
+  const skala = Math.min(r.width / nw, r.height / nh);
+  const w = nw * skala, h = nh * skala;
+  return { x: (r.width - w) / 2, y: (r.height - h) / 2, w, h, r };
+}
+function rysujRoi(el, roi) {
+  const o = obszarObrazu();
+  const [x0, y0, x1, y1] = roi;
+  el.style.left = (o.x + Math.min(x0, x1) * o.w) + "px";
+  el.style.top = (o.y + Math.min(y0, y1) * o.h) + "px";
+  el.style.width = (Math.abs(x1 - x0) * o.w) + "px";
+  el.style.height = (Math.abs(y1 - y0) * o.h) + "px";
+}
+function wzgledne(e) {
+  const o = obszarObrazu();
+  const x = (e.clientX - o.r.left - o.x) / o.w, y = (e.clientY - o.r.top - o.y) / o.h;
+  return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
+}
+let poczatek = null;
+ramka.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  poczatek = wzgledne(e);
+  $("#zazn").style.display = "block";
+  rysujRoi($("#zazn"), [...poczatek, ...poczatek]);
+  e.preventDefault();
+});
+window.addEventListener("mousemove", (e) => {
+  if (poczatek) rysujRoi($("#zazn"), [...poczatek, ...wzgledne(e)]);
+});
+window.addEventListener("mouseup", (e) => {
+  if (!poczatek) return;
+  const [x1, y1] = wzgledne(e), [x0, y0] = poczatek;
+  poczatek = null;
+  $("#zazn").style.display = "none";
+  if (Math.abs(x1 - x0) < 0.02 || Math.abs(y1 - y0) < 0.02) return;
+  const roi = [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)].map((v) => +v.toFixed(4));
+  wyslij("/api/ustawienia", { roi }).then(odswiez).catch(pokazBlad);
+});
+window.addEventListener("resize", () => stan && rysujRoi($("#roi"), stan.ustawienia.roi));
+img.addEventListener("load", () => stan && rysujRoi($("#roi"), stan.ustawienia.roi));
+
+// upuszczenie zrzutu ekranu na podgląd
+["dragenter", "dragover"].forEach((t) => document.addEventListener(t, (e) => {
+  e.preventDefault(); document.body.classList.add("upuszczanie");
+}));
+["dragleave", "drop"].forEach((t) => document.addEventListener(t, (e) => {
+  e.preventDefault(); if (t === "drop" || e.target === document.documentElement) document.body.classList.remove("upuszczanie");
+}));
+const ROZ_AUDIO = /\.(mp3|wav|m4a|ogg|opus|flac|aac|wma|mp4|mkv|webm|mov|avi)$/i;
+let plikUpuszczony = null;   // nagranie upuszczone na stronę (do utworzenia głosu)
+document.addEventListener("drop", (e) => {
+  const plik = e.dataTransfer && e.dataTransfer.files[0];
+  if (!plik) return;
+  if ((plik.type || "").startsWith("audio/") || (plik.type || "").startsWith("video/") || ROZ_AUDIO.test(plik.name)) {
+    // nagranie głosu -> sekcja „Własny głos”
+    plikUpuszczony = plik;
+    $("#plik-glosu").value = "";
+    if (!$("#nazwa-glosu").value) $("#nazwa-glosu").value = plik.name.replace(/\.[^.]+$/, "");
+    pokazWynikGlosu(`Wybrano plik: ${plik.name} (${(plik.size / 1048576).toFixed(1)} MB). Kliknij „Utwórz głos”.`);
+    $("#sekcja-wlasny-glos").scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+  const nazwa = plik.name.replace(/[^\w.\-]/g, "_");
+  wyslij("/api/obraz", plik, { "Content-Type": "application/octet-stream", "X-Nazwa": nazwa })
+    .then(odswiez).catch(pokazBlad);
+});
+
+// ---------- własny głos Chatterbox
+function pokazWynikGlosu(tekst, klasa) {
+  const b = $("#wynik-glosu");
+  b.hidden = false;
+  b.innerHTML = "";
+  const d = document.createElement("div");
+  if (klasa) d.className = klasa;
+  d.textContent = tekst;
+  b.appendChild(d);
+  return b;
+}
+$("#plik-glosu").addEventListener("change", () => {
+  const plik = $("#plik-glosu").files[0];
+  plikUpuszczony = null;
+  if (plik && !$("#nazwa-glosu").value) $("#nazwa-glosu").value = plik.name.replace(/\.[^.]+$/, "");
+});
+$("#b-utworz-glos").addEventListener("click", async () => {
+  const plik = $("#plik-glosu").files[0] || plikUpuszczony;
+  if (!plik) { pokazBlad(new Error("Najpierw wybierz plik z nagraniem głosu")); return; }
+  const nazwa = $("#nazwa-glosu").value.trim() || plik.name.replace(/\.[^.]+$/, "");
+  const b = $("#b-utworz-glos");
+  b.disabled = true;
+  pokazWynikGlosu("Wysyłam nagranie i tworzę głos… Za pierwszym razem aplikacja ładuje model na kartę graficzną (do ~40 s).");
+  try {
+    const naglowki = { "Content-Type": "application/octet-stream",
+      "X-Plik": encodeURIComponent(plik.name), "X-Nazwa": encodeURIComponent(nazwa),
+      "X-Od": $("#glos-od").value, "X-Do": $("#glos-do").value };
+    const j = await wyslij("/api/glos_chatterbox", plik, naglowki);
+    const box = pokazWynikGlosu(`Gotowe: głos „${j.nazwa}”. Nagranie ${j.nagranie_s} s, mowy ${j.mowa_s} s; ` +
+      `referencja ${j.referencja_s} s (fragment ${j.fragment_s[0]}–${j.fragment_s[1]} s), tożsamość głosu z ${j.segmentow} fragmentów.`);
+    for (const o of (j.ostrzezenia || [])) { const d = document.createElement("div"); d.className = "ost"; d.textContent = "⚠ " + o; box.appendChild(d); }
+    const a = document.createElement("audio"); a.controls = true; a.src = `/glosy/${encodeURIComponent(j.id.slice(3))}/referencja.wav?t=${Date.now()}`;
+    box.appendChild(a);
+    const uzyj = document.createElement("button"); uzyj.textContent = "Użyj tego głosu"; uzyj.style.marginTop = "8px";
+    uzyj.addEventListener("click", () => wyslij("/api/ustawienia", { glos: j.id }).then(odswiez).catch(pokazBlad));
+    box.appendChild(uzyj);
+    plikUpuszczony = null; $("#plik-glosu").value = "";
+    ostatnieListy = "";   // odśwież listę głosów
+    odswiez();
+  } catch (e) {
+    pokazWynikGlosu("Nie udało się utworzyć głosu: " + e.message, "ost");
+  } finally { b.disabled = false; }
+});
+function rysujWlasneGlosy(glosy, aktywny) {
+  const kont = $("#lista-wlasnych");
+  const wlasne = glosy.filter((g) => g.wlasny);
+  const klucz = JSON.stringify([wlasne.map((g) => g.id), aktywny]);
+  if (kont.dataset.klucz === klucz) return;
+  kont.dataset.klucz = klucz;
+  kont.innerHTML = "";
+  if (!wlasne.length) { kont.innerHTML = '<span class="szary">Jeszcze żadnego.</span>'; return; }
+  for (const g of wlasne) {
+    const w = document.createElement("div");
+    w.className = "glos-wlasny" + (g.id === aktywny ? " aktywny" : "");
+    const n = document.createElement("span"); n.className = "nazwa";
+    const i = g.info || {};
+    n.textContent = (g.info && g.info.nazwa) || g.id.slice(3);
+    n.title = `${i.zrodlo || ""} · mowa ${i.mowa_s ?? "?"} s · utworzony ${i.utworzony || "?"}`;
+    w.appendChild(n);
+    const sluchaj = document.createElement("button"); sluchaj.textContent = "▶ próbka";
+    sluchaj.title = "Odsłuchaj nagranie referencyjne (wybrane ~10 s)";
+    sluchaj.addEventListener("click", () => {
+      let a = w.querySelector("audio");
+      if (!a) { a = document.createElement("audio"); a.controls = true; a.src = `/glosy/${encodeURIComponent(g.id.slice(3))}/referencja.wav`; w.after(a); }
+      a.play();
+    });
+    const uzyj = document.createElement("button"); uzyj.textContent = g.id === aktywny ? "używany" : "Użyj";
+    uzyj.disabled = g.id === aktywny;
+    uzyj.addEventListener("click", () => wyslij("/api/ustawienia", { glos: g.id }).then(odswiez).catch(pokazBlad));
+    const usun = document.createElement("button"); usun.textContent = "Usuń";
+    usun.addEventListener("click", () => {
+      if (!confirm(`Usunąć głos „${n.textContent}”? (Kopia trafi do folderu glosy\\_usuniete)`)) return;
+      wyslij("/api/usun_glos", { id: g.id }).then(() => { ostatnieListy = ""; odswiez(); }).catch(pokazBlad);
+    });
+    w.append(sluchaj, uzyj, usun);
+    kont.appendChild(w);
+  }
+}
+
+// ---------- przyciski
+$("#b-start").addEventListener("click", () => {
+  const sciezka = stan && stan.dziala ? "/api/stop" : "/api/start";
+  $("#b-start").disabled = true;
+  wyslij(sciezka).catch(pokazBlad).finally(() => { $("#b-start").disabled = false; odswiez(); });
+});
+$("#b-ucisz").addEventListener("click", () => wyslij("/api/ucisz").catch(pokazBlad));
+$("#b-pomin").addEventListener("click", () => wyslij("/api/pomin").catch(pokazBlad));
+$("#b-nagraj").addEventListener("click", () => {
+  const wlacz = !(stan && stan.nagrywanie && stan.nagrywanie.nagrywa);
+  wyslij("/api/nagrywanie", { wlacz }).then(odswiez).catch(pokazBlad);
+});
+$("#b-obszar-gta").addEventListener("click", () =>
+  wyslij("/api/ustawienia", { roi: [0.16, 0.74, 0.84, 0.965] }).then(odswiez).catch(pokazBlad));
+$("#b-test").addEventListener("click", () =>
+  wyslij("/api/test_glosu", { tekst: $("#test-tekst").value }).catch(pokazBlad));
+$("#b-kamery").addEventListener("click", async () => {
+  $("#kamery").innerHTML = '<div class="szary male" style="margin-top:6px">Szukam urządzeń…</div>';
+  try {
+    const j = await wyslij("/api/kamery");
+    $("#kamery").innerHTML = "";
+    if (!j.kamery.length) $("#kamery").innerHTML = '<div class="szary male" style="margin-top:6px">Nic nie znalazłem. Zamknij OBS / Elgato Studio i spróbuj ponownie.</div>';
+    for (const k of j.kamery) {
+      const b = document.createElement("button");
+      b.textContent = `#${k.indeks}: ${k.nazwa} (${k.obraz})`;
+      b.addEventListener("click", () => wyslij("/api/ustawienia", { kamera_indeks: k.indeks }).then(odswiez));
+      $("#kamery").appendChild(b);
+    }
+  } catch (e) { $("#kamery").innerHTML = ""; pokazBlad(e); }
+});
+$("#b-odczytaj").addEventListener("click", async () => {
+  const box = $("#wynik-odczytu");
+  box.style.display = "block";
+  box.textContent = "Odczytuję…";
+  try {
+    const j = await wyslij("/api/odczytaj");
+    box.innerHTML = "";
+    const dodaj = (etykieta, tresc) => {
+      const d = document.createElement("div");
+      const s = document.createElement("span"); s.className = "szary"; s.textContent = etykieta + " ";
+      d.appendChild(s); d.appendChild(document.createTextNode(tresc)); box.appendChild(d);
+    };
+    dodaj(`OCR (${j.ocr_ms} ms):`, j.tekst || "— nic nie rozpoznano —");
+    dodaj("Lektor przeczyta:", j.do_przeczytania || "—");
+    if (j.juz_przeczytane && j.juz_przeczytane.length) dodaj("Już przeczytane (pominie):", j.juz_przeczytane.join(" · "));
+    const pola = (j.pola || []).map((p) => `${p.tekst} [${p.pewnosc.toFixed(2)}]` + (p.odrzucone ? ` ✗ ${p.odrzucone}` : "")).join(" · ");
+    if (pola) dodaj("Wszystkie pola:", pola);
+  } catch (e) { box.textContent = "Błąd: " + e.message; }
+});
+
+// ---------- odświeżanie stanu
+function chip(el, klasa, tekst) { el.className = "chip " + klasa; el.textContent = tekst; }
+function wiersz(h) {
+  const tr = document.createElement("tr");
+  const kom = (t, kl) => { const td = document.createElement("td"); td.textContent = t; if (kl) td.className = kl; tr.appendChild(td); return td; };
+  kom(h.czas, "szary");
+  const td = kom(h.tekst + (h.przerwana ? "  (przerwane)" : ""));
+  td.title = "Surowy OCR: " + (h.surowy || "");
+  if (h.pominiete && h.pominiete.length) {
+    const s = document.createElement("span"); s.className = "pominiete";
+    s.textContent = "pominięto (już było): " + h.pominiete.join(" · ");
+    td.appendChild(s);
+  }
+  kom(h.ocr_ms != null ? h.ocr_ms : "–", "liczba");
+  const g = kom(h.tts_ms != null ? h.tts_ms : "–", "liczba");
+  if (h.silnik) { const s = document.createElement("span"); s.className = "silnik pominiete"; s.textContent = h.silnik; g.appendChild(s); }
+  kom(h.calosc_ms != null ? h.calosc_ms : "–", "liczba");
+  return tr;
+}
+let bledyPolaczenia = 0;
+async function odswiez() {
+  try { stan = await pobierz("/api/stan"); bledyPolaczenia = 0; }
+  catch (e) {
+    // pojedyncze zerwane zapytanie to nic groźnego – komunikat dopiero po kilku z rzędu
+    if (++bledyPolaczenia >= 3) chip($("#c-zrodlo"), "blad", "Brak połączenia z aplikacją");
+    return;
+  }
+  const u = stan.ustawienia;
+
+  const cb = stan.chatterbox || {};
+  const listy = JSON.stringify([stan.listy, cb.modele]);
+  if (listy !== ostatnieListy) {
+    ostatnieListy = listy;
+    wypelnijGlosy($("#lista-glosow"), stan.listy.glosy);
+    wypelnijSelect($("#lista-modeli"), stan.listy.modele_ocr);
+    wypelnijSelect($("#lista-audio"), stan.listy.audio, "Domyślne urządzenie Windows");
+    wypelnijSelect($("#lista-obrazow"), stan.listy.obrazy.map((n) => ({ id: "testy/" + n, nazwa: n })));
+    wypelnijSelect($("#lista-modeli-cb"), (cb.modele || []).map((m) => ({ id: m.id, nazwa: m.nazwa + (m.pobrany ? "" : " – pobierze się (ok. 2 GB)") })));
+  }
+  $$("[data-ust]").forEach((el) => ustawKontrolke(el, u[el.dataset.ust]));
+  $$("[data-dla]").forEach((el) => { el.hidden = el.dataset.dla !== u.zrodlo; });
+
+  // głos: opcje Chatterboxa tylko przy głosie Chatterbox
+  const czyCb = String(u.glos || "").startsWith("cb:");
+  $("#opcje-chatterbox").hidden = !czyCb;
+  $("#silnik-opis").textContent = czyCb ? "· Chatterbox (karta graficzna)" : "· Piper (procesor)";
+  $("#cb-brak").hidden = !!cb.zainstalowany;
+  $("#cb-tworzenie").hidden = !cb.zainstalowany;
+  const inf = cb.info || {}, cz = cb.czasy || {};
+  $("#cb-info").textContent = inf.gpu
+    ? `Działa na: ${inf.gpu}. ` + (cz.ms != null ? `Ostatnie zdanie: ${cz.ms} ms (model ${cz.t3_ms} ms + vocoder ${cz.s3_ms} ms).` : "")
+    : "Model załaduje się przy pierwszym użyciu (kilkanaście sekund).";
+  rysujWlasneGlosy(stan.listy.glosy, u.glos);
+  if (cb.tworzenie && $("#b-utworz-glos").disabled) $("#wynik-glosu").firstChild && ($("#wynik-glosu").firstChild.textContent = "Trwa: " + cb.tworzenie);
+
+  // nagrywanie
+  const ng = stan.nagrywanie || {};
+  const bn = $("#b-nagraj");
+  bn.textContent = ng.nagrywa ? `■ Zatrzymaj nagrywanie (${ng.czas_s} s)` : "⏺ Nagraj";
+  bn.className = ng.nagrywa ? "nagrywa" : "";
+  bn.title = ng.plik ? `Ostatnie nagranie: ${ng.sciezka}` : bn.title;
+
+  // znaczniki stanu
+  const l = stan.ladowanie;
+  if (l.ocr.startsWith("błąd")) chip($("#c-ocr"), "blad", "OCR: " + l.ocr);
+  else if (l.ocr) chip($("#c-ocr"), "uwaga", "OCR: " + l.ocr);
+  else chip($("#c-ocr"), stan.ocr_gotowy ? "ok" : "", stan.ocr_gotowy ? "OCR gotowy" : "OCR nieładowany");
+  if (l.glos.startsWith("błąd")) chip($("#c-glos"), "blad", "Głos: " + l.glos);
+  else if (l.glos) chip($("#c-glos"), "uwaga", "Głos: " + l.glos);
+  else if (cb.tworzenie) chip($("#c-glos"), "uwaga", "Głos: " + cb.tworzenie);
+  else chip($("#c-glos"), stan.glos_gotowy ? "ok" : "", stan.glos_gotowy ? `${stan.silnik_glosu} gotowy` + (stan.mowi ? " · mówi" : "") : "Głos nieładowany");
+  if (stan.blad_zrodla) chip($("#c-zrodlo"), "blad", stan.blad_zrodla);
+  else if (stan.dziala) chip($("#c-zrodlo"), "ok", `${stan.zrodlo} · ${stan.fps} kl./s · OCR ${stan.ocr_na_s}/s`);
+  else chip($("#c-zrodlo"), "", "Zatrzymane");
+  $("#c-audio").hidden = !stan.atrapa_audio;
+
+  const b = $("#b-start");
+  b.textContent = stan.dziala ? "■ Stop" : "▶ Start";
+  b.className = stan.dziala ? "stop" : "glowny";
+
+  // podgląd: strumień MJPEG tylko gdy działa źródło; gdy serwer nie ma żadnego odbiorcy
+  // (zerwane połączenie), łączymy się ponownie zamiast pokazywać zamrożoną klatkę
+  const klienci = stan.diagnostyka ? stan.diagnostyka.klienci_podgladu : 1;
+  if (stan.dziala && strumienAktywny && klienci === 0) {
+    if (++bezOdbiorcy >= 3) { strumienAktywny = false; bezOdbiorcy = 0; }
+  } else bezOdbiorcy = 0;
+  if (stan.dziala && !strumienAktywny) { img.src = "/podglad.mjpg?t=" + Date.now(); strumienAktywny = true; }
+  if (!stan.dziala && strumienAktywny) { img.removeAttribute("src"); strumienAktywny = false; }
+  $("#suwak-jasnosc").disabled = !!u.prog_auto;
+  const d = stan.diagnostyka || {};
+  const diag = $("#diag");
+  diag.textContent = stan.dziala
+    ? `tekst w obszarze: ${d.maska_proc}% · ostatni OCR: ${d.ocr_wiek_s ?? "–"} s temu` +
+      (d.pominiete_linie ? ` · pominiętych powtórek: ${d.pominiete_linie}` : "") +
+      ((stan.lektor || {}).wstepne_trafione ? ` · synteza przed potwierdzeniem: trafiona ${stan.lektor.wstepne_trafione}×` +
+        ((stan.lektor || {}).wstepne_chybione ? `, chybiona ${stan.lektor.wstepne_chybione}×` : "") : "") +
+      (d.bledy_ocr ? ` · błędy OCR: ${d.bledy_ocr}` : "") + (d.restarty_zrodla ? ` · restarty źródła: ${d.restarty_zrodla}` : "")
+    : "";
+  if (stan.dziala && stan.odrzucone && stan.odrzucone.length) {
+    const s = document.createElement("span"); s.className = "odrz";
+    s.textContent = " · odrzucone: " + stan.odrzucone.map((o) => `${o.tekst} (${o.powod})`).join(", ");
+    diag.appendChild(s);
+  }
+  $("#diag-zapisane").textContent = u.zapis_diagnostyki ? `· zapisano ${d.zapisane_diagnostyki || 0} w tej sesji` : "";
+  $("#pusto").hidden = stan.dziala;
+  rysujRoi($("#roi"), u.roi);
+
+  $("#odczyt").textContent = stan.odczyt || "—";
+  $("#odczyt-ms").textContent = stan.odczyt ? stan.odczyt_ms + " ms" : "";
+  $("#ostatnie").textContent = stan.historia.length ? stan.historia[0].tekst : "—";
+  const lk = stan.lektor || {};
+  const przecinek = (x) => String(x).replace(".", ",");
+  $("#kolejka-info").textContent = lk.w_kolejce
+    ? `w kolejce: ${lk.w_kolejce} · zaległość ${przecinek(lk.zaleglosc_s)} s` + (lk.tempo ? ` · tempo ${przecinek(lk.tempo)}` : "")
+    : (stan.historia.length && stan.historia[0].predkosc ? `tempo ${przecinek(stan.historia[0].predkosc)}` : "");
+  $("#wyjscie-info").textContent = stan.wyjscie_audio ? "Wyjście: " + stan.wyjscie_audio : "";
+
+  const tb = $("#historia");
+  tb.innerHTML = "";
+  if (!stan.historia.length) tb.innerHTML = '<tr><td colspan="5" class="szary">Jeszcze nic nie przeczytano.</td></tr>';
+  for (const h of stan.historia) tb.appendChild(wiersz(h));
+
+  const s = stan.statystyki;
+  $("#s-razem").textContent = s.calosc_ms ?? "–";
+  $("#s-ocr").textContent = s.ocr_ms ?? "–";
+  $("#s-tts").textContent = s.tts_ms ?? "–";
+  $("#s-ile").textContent = s.kwestii;
+
+  const dz = $("#dziennik");
+  const naDole = dz.scrollTop + dz.clientHeight >= dz.scrollHeight - 4;
+  dz.textContent = stan.dziennik.join("\n");
+  if (naDole) dz.scrollTop = dz.scrollHeight;
+}
+odswiez();
+setInterval(odswiez, 700);
+</script>
+</body>
+</html>

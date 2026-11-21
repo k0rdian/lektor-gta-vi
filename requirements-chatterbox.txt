@@ -1,0 +1,18 @@
+# Środowisko głosu Chatterbox – osobne od głównego .venv, instaluje je instaluj_chatterbox.bat.
+# torch i torchaudio z CUDA 12.8 (obsługa RTX 50xx) instaluje bat z indeksu download.pytorch.org,
+# a sam Chatterbox (wersja z modelem Multilingual V3) – z GitHuba, bez zależności (pin do commita).
+librosa==0.11.0
+s3tokenizer==0.3.0
+transformers==5.2.0
+diffusers==0.29.0
+resemble-perth==1.0.1
+conformer==0.3.2
+safetensors>=0.5.3
+einops
+omegaconf
+scipy
+pyloudnorm
+huggingface_hub
+soundfile
+imageio-ffmpeg
+setuptools<81

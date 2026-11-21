@@ -1,0 +1,15 @@
+{
+  "nazwa": "Lektor PL",
+  "utworzony": "2026-11-20 13:04",
+  "zrodlo": "20261120_130455_elevenlabs_2026-11-20t02_32_28_jesco_-_e.mp3",
+  "model": "v3",
+  "nagranie_s": 58.2,
+  "mowa_s": 54.4,
+  "fragment_s": [
+    39.0,
+    51.6
+  ],
+  "referencja_s": 10.0,
+  "segmentow": 11,
+  "ostrzezenia": []
+}

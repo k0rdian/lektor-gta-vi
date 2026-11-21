@@ -1,0 +1,16 @@
+{
+  "nazwa": "Przykład – klon głosu Piper „darkman”",
+  "utworzony": "2026-11-20 04:05",
+  "zrodlo": "20261120_040505_darkman_test.mp3",
+  "model": "v3",
+  "nagranie_s": 52.2,
+  "mowa_s": 40.3,
+  "fragment_s": [
+    0.8,
+    13.2
+  ],
+  "referencja_s": 10.0,
+  "segmentow": 10,
+  "ostrzezenia": [],
+  "opis": "Utworzony w nocy 20.11 z próbki probki/piper_darkman.wav (przekonwertowanej do MP3), żeby sprawdzić klonowanie. Podobieństwo do oryginału 0,949 (wbudowany głos: 0,757)."
+}

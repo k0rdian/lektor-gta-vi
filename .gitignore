@@ -1,8 +1,29 @@
+# Środowiska Pythona (tworzą je instaluj.bat i instaluj_chatterbox.bat)
 .venv/
+.venv-chatterbox/
 __pycache__/
-.pytest_cache/
-roi.json
-debug_samples/
-kolejka.json
-lektor.log*
-kolejka.json.*.tmp
+*.pyc
+
+# Ustawienia i dane użytkownika
+ustawienia.json
+diagnostyka/
+nagrania/
+probki/
+glosy/_wgrane/
+glosy/_usuniete/
+kopia-*/
+INSTRUKCJA.md
+
+# Modele pobierane automatycznie (instalator albo pierwsze użycie)
+modele/chatterbox/
+modele/piper/
+modele/whisper/
+modele/squim/
+modele/ocr/*
+!modele/ocr/PP-OCRv6_det_small.mnn
+!modele/ocr/PP-OCRv6_rec_small.mnn
+!modele/ocr/ppocrv6_dict.txt
+
+# Pliki generowane przez testy
+testy/scenariusze/
+testy/wgrany_*

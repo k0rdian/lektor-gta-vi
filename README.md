@@ -1,161 +1,138 @@
 # Lektor GTA VI
 
-Czyta polskie napisy z gry na głos — jak lektor w telewizji. Gra chodzi na PS5,
-obraz trafia do PC przez kartę Elgato HD60 X (albo z ekranu), a PC rozpoznaje
-napisy (OCR Windowsa) i czyta je głosem **Marek** z Edge TTS.
+Czyta na głos polskie napisy z GTA VI – jak lektor w telewizji. Aplikacja patrzy na obraz z gry (karta przechwytująca, np. Elgato HD60 X przy PS5, albo ekran PC), rozpoznaje napisy i czyta je polskim głosem. Nic nie dotyka konsoli ani gry.
 
 ```
-obraz z karty → wycinek z napisami → obróbka → OCR Windowsa → odsiew powtórek → Edge TTS (Marek) → głośniki
+obraz z gry → wycinek z napisami → OCR (PaddleOCR PP-OCRv6) → odsiew powtórek i śmieci → głos (Piper albo Chatterbox) → głośniki
 ```
 
-- każda kwestia jest czytana raz, nawet jeśli wisi na ekranie kilka sekund albo OCR na chwilę ją zgubi,
-- lektor czyta płynnie: bez pauz na przecinkach i z krótkimi pauzami między zdaniami,
-- gdy napisy lecą szybciej, niż lektor czyta, przyspiesza (do +60%), a wszystkie rozpoznane kwestie czekają na odczyt w kolejności,
-- nieprzeczytane teksty są zapisywane w `kolejka.json` i wracają po ponownym uruchomieniu,
-- nazwy własne możesz „spolszczyć” w `config.toml` (domyślnie *Vice City → Wajs Siti*, *Jason → Dżejson*),
-- nic nie dotyka konsoli ani gry — lektor tylko patrzy na obraz.
+- **Dwa rodzaje głosu:**
+  - **Piper** – szybki, działa na każdym komputerze.
+  - **Chatterbox** – naturalny głos, który można sklonować z dowolnego nagrania. Wymaga karty NVIDIA. Pierwszy dźwięk po ok. 0,1 s.
+- **Każda linia raz.** Lektor pamięta, co już przeczytał, także gdy w grze zmienia się tylko druga linia napisu.
+- **Kolejka dialogów.** Przy szybkiej wymianie zdań czyta wszystko po kolei, a gdy zostaje w tyle, mówi szybciej i skraca pauzy.
+- **Odsiew śmieci.** Odrzuca tablice rejestracyjne, szyldy, tekst w ruchu i tekst poza środkiem ekranu.
+- **Słownik wymowy** (`slownik_wymowy.txt`), np. `Jason = Dżejson`, `Vice City = Wajs Siti`.
+- **Lokalnie i za darmo.** Internet jest potrzebny tylko do instalacji i pobrania modeli.
 
-## Instalacja (raz)
+## Wymagania
 
-1. Zainstaluj **Pythona 3.13** z [python.org](https://www.python.org/downloads/windows/) i zaznacz *Add python.exe to PATH*.
-2. Skopiuj ten folder na PC i kliknij dwukrotnie **`setup.bat`**.
-3. Jeśli setup napisze, że brakuje polskiego OCR, otwórz PowerShell **jako administrator** i wklej:
-   ```powershell
-   Get-WindowsCapability -Online | Where-Object Name -like 'Language.OCR*pl-PL*' | Add-WindowsCapability -Online
-   ```
-4. Kliknij **`test-glosu.bat`** — powinieneś usłyszeć Marka. Jeśli tak, Edge TTS i dźwięk działają.
+- Windows 10 albo 11 (64-bit).
+- Źródło obrazu:
+  - karta przechwytująca, np. Elgato HD60 X przy PS5,
+  - gra na ekranie PC (także PS Remote Play),
+  - plik wideo albo zrzut ekranu (do testów).
+- Głos **Chatterbox**:
+  - karta NVIDIA (sprawdzone na RTX 5080 16 GB; Chatterbox zajmuje ok. 8 GB jej pamięci),
+  - ok. 10 GB miejsca na dysku.
+- Głos **Piper**: wystarczy procesor.
 
-## Podłączenie obrazu
+## Instalacja
 
-- **HD60 X**: kabel USB z karty do **PC**. Monitor dalej dostaje obraz z wyjścia HDMI OUT karty, bez opóźnień.
-- Kartę może używać naraz tylko jeden program. Zamknij OBS i Elgato Studio **albo** włącz w OBS
-  *Uruchom wirtualną kamerę* i wpisz w `config.toml`: `device = "OBS Virtual Camera"`.
-- W PS5 musi być wyłączone HDCP: *Ustawienia → System → HDMI → Włącz HDCP* (wyłącz).
-- W GTA włącz napisy po polsku.
-- Bez karty: `start.bat --source screen` czyta z monitora (PS Remote Play, gra na PC w trybie okna bez ramki).
+1. Pobierz aplikację: zielony przycisk **Code → Download ZIP**, a potem rozpakuj. Możesz też użyć `git clone https://github.com/k0rdian/lektor-gta-vi.git`. Najlepiej do folderu bez polskich znaków w ścieżce, np. `C:\Lektor`.
+2. Kliknij dwukrotnie **`instaluj.bat`**. Instalator:
+   - zainstaluje Pythona 3.12, jeśli go nie masz (przez `winget`),
+   - utworzy środowisko `.venv` i pobierze pakiety (ok. 150 MB) oraz domyślny głos Pipera,
+   - na komputerze z kartą NVIDIA zapyta, czy od razu doinstalować głos **Chatterbox**. To ok. 10 GB i 15–40 minut pobierania. Możesz to zrobić później plikiem **`instaluj_chatterbox.bat`**.
+3. Uruchom **`uruchom.bat`**. Otworzy się przeglądarka z panelem aplikacji (`http://127.0.0.1:8765`). Okno konsoli musi zostać otwarte, bo jego zamknięcie wyłącza lektora.
 
-`lista-urzadzen.bat` pokazuje karty i kamery, monitory oraz wyjścia audio.
+## Pierwszy test bez gry (2 minuty)
 
-## Uruchomienie
+1. W polu **Źródło obrazu** wybierz „Obraz (zrzut ekranu)” i plik `klatka1.png`.
+2. Kliknij **▶ Start**. Lektor przeczyta napis z obrazka, a w **Historii** pojawią się czasy.
+3. Przeciągnij na podgląd własny zrzut ekranu z GTA. Aplikacja od razu go odczyta.
+4. Zaznacz myszką na podglądzie obszar z napisami albo kliknij **Obszar GTA VI**.
 
-### Test na YouTube
+## Gra na PS5 przez kartę przechwytującą
 
-Kliknij **`youtube.bat`**. Otworzy się widoczny panel **Lektor — sterowanie**.
-Na początku lektor jest zatrzymany. Przycisk **Pokaż numery** wyświetla przez
-chwilę duży numer na każdym monitorze. Lista podaje także położenie monitora
-(główny, po lewej, po prawej), więc jednakowa rozdzielczość nie przeszkadza w wyborze.
+1. Zamknij OBS i Elgato Studio, bo kartę może naraz używać tylko jeden program.
+   Jeśli chcesz zostawić OBS, włącz w nim „Wirtualną kamerę” i wybierz ją jako kartę przechwytującą.
+2. Wybierz źródło „Karta przechwytująca”, kliknij **Wykryj** i wybierz kartę.
+3. Na PS5 wyłącz HDCP: *Ustawienia → System → HDMI → Włącz HDCP*. Inaczej obraz będzie czarny.
+4. Kliknij **Start** i zaznacz obszar napisów.
 
-W przeglądarce włącz polskie napisy (CC) i zatrzymaj film z widocznym napisem.
-Wybierz monitor i kliknij **Wybierz napisy**. W ciągu 7 sekund pokaż przeglądarkę.
-Na zrzucie zaznacz pas napisów z zapasem na dwie linie i zatwierdź Enterem.
-Lektor nadal milczy: dopiero **Czytaj** uruchamia odczyt. Wznów też film.
+**Ustawienia napisów w GTA VI**, które najbardziej pomagają OCR:
+- Napisy: włączone.
+- Rozmiar: duży.
+- Tło: pełne.
+- Imiona mówiących: wyłączone.
 
-Panel pozostaje na wierzchu i można go przeciągnąć poza obszar napisów.
-**Pauza** ucisza głos i zachowuje kolejkę. Czerwony **ZATRZYMAJ** kończy proces
-odczytu, również podczas zaznaczania obszaru lub odliczania. **Zamknij** oraz
-krzyżyk okna kończą odczyt i zamykają panel. Ponowne uruchomienie programu
-nie tworzy drugiego panelu ani drugiego głosu.
+## Głosy
 
-### Kolejka bez pomijania kwestii
+### Piper (na procesorze)
 
-Wszystkie przyjęte przez lektora kwestie są czytane po kolei, nawet gdy
-opóźnienie rośnie. Wiek kwestii nie powoduje jej usunięcia. Po zakończeniu
-pliku wideo lektor czeka na odczyt całej kolejki, bez limitu 30 sekund.
+Pięć polskich głosów. Domyślny pobiera instalator, pozostałe pobierają się same przy pierwszym wyborze. Własny model Pipera (`.onnx` + `.onnx.json`) wrzuć do `modele\piper\`.
 
-Panel pokazuje liczbę oczekujących kwestii (wlicza też bieżącą). Przycisk
-**Pokaż kolejkę** otwiera pełną listę w kolejności odczytu. Teksty są zapisywane
-w `kolejka.json` w folderze aplikacji i usuwane z zapisu dopiero po pełnym
-odtworzeniu. Chwilowy błąd syntezy lub dźwięku powoduje ponowienie próby tej
-samej kwestii; następne czekają.
+### Chatterbox (na karcie NVIDIA)
 
-Pauza, zatrzymanie i zamknięcie aplikacji zachowują zaległe teksty. Po ponownym
-wybraniu źródła i kliknięciu **Czytaj** lektor odczyta najpierw zapisane
-zaległości. Przerwana kwestia jest czytana od początku, aby nie zgubić jej
-końcówki. Dopiero ręczne **Wyczyść kolejkę…** w oknie podglądu usuwa wszystkie
-zaległości; skrót **Pomiń** nadal pozwala świadomie pominąć bieżącą kwestię.
-Podczas pauzy rozpoznawanie nowych napisów także jest wstrzymane.
+Chatterbox Multilingual V3 firmy Resemble AI mówi po polsku dowolnym głosem na podstawie ok. 10 s nagrania i nie wymaga trenowania. W folderze `glosy\` są gotowe głosy:
 
-Lektor czyta napisy widoczne na ekranie; film musi pozostać odsłonięty,
-na tym samym monitorze, w tym samym miejscu i rozmiarze. Po zmianie układu
-wybierz obszar ponownie przez **Ctrl+Alt+W**. **Ctrl+Alt+P** wstrzymuje czytanie,
-a **Ctrl+Alt+Q** kończy lektora. Obszar ekranu jest zapisywany osobno od karty Elgato.
-Ten tryb nie pobiera filmu ani nie tłumaczy dźwięku. Możesz też użyć
-`start.bat --youtube` lub `start.bat --source screen --monitor 2 --select`.
+- **Janusz**
+- **Lektor PL**
+- **Przykład – klon głosu Piper „darkman”**
 
-### Tempo i pauzy
+Wybierasz je w sekcji „Głos lektora”.
 
-Lektor czyta z tempem bazowym `rate` (+20%). Przecinki, myślniki i wielokropki w środku zdania
-nie robią pauz (`skip_commas`), a dłuższe pauzy syntezatora, np. między zdaniami, są skracane
-do `max_pause_ms` (180 ms). Gdy napisy lecą szybciej, niż lektor czyta, przyspiesza o `rate_step`
-(15%) za każdą sekundę spóźnienia ponad `catch_up_s` (1,5 s), najwyżej do `rate_max` (+60%),
-i po nadrobieniu stopniowo zwalnia. Kolejne kwestie grają przez jeden stały strumień audio,
-bez dodatkowej ciszy między nimi (`gapless`). Wszystko to ustawisz w sekcji `[tts]` w `config.toml`.
+**Własny głos.** W sekcji „Własny głos (Chatterbox)” wybierz plik, wpisz nazwę i kliknij **Utwórz głos**. Przyjmuje mp3, wav, m4a, ogg, flac, a nawet mp4/mkv (dźwięk z filmu).
+- Daj 15–60 s czystej mowy jednej osoby, bez muzyki i drugiego głosu w tle.
+- Aplikacja sama wybierze najlepsze 10 s.
+- Klonuj tylko głos, do którego masz prawo: własny albo za zgodą tej osoby.
+- Chatterbox dodaje do dźwięku niesłyszalny znak wodny (Perth).
 
-Przy każdej czytanej kwestii lektor wypisuje opóźnienie (od pojawienia się napisu do początku
-czytania), tempo i czas syntezy — widać to w ostatniej linii panelu. Opóźnienie stale rośnie →
-podnieś `rate` albo `rate_max`; lektor brzmi zbyt pośpiesznie → obniż `rate`.
+**Szybkość czy jakość** (sekcja „Głos lektora”):
 
-### Gra / karta Elgato
-
-Kliknij **`start.bat`**. W widocznym panelu wybierz **Karta Elgato / gra**,
-następnie **Wybierz napisy**. Na klatce z gry zaznacz myszką pas napisów
-(z zapasem na dwie linie) i wciśnij **ENTER**. Kliknij **Czytaj**, aby uruchomić głos.
-Obszar zapisuje się w `roi.json`. Każde uruchomienie zaczyna się bez odczytu.
-
-| Skrót (globalny) | W oknie konsoli | Działanie |
+| Tryb | Pierwszy dźwięk (RTX 5080) | Opis |
 |---|---|---|
-| Ctrl+Alt+P | p | pauza / wznowienie |
-| Ctrl+Alt+R | r | powtórz ostatnią kwestię |
-| Ctrl+Alt+K | k | pomiń bieżącą kwestię |
-| Ctrl+Alt+W | w | zaznacz obszar od nowa |
-| Ctrl+Alt+D | d | podgląd: co widzi OCR |
-| Ctrl+Alt+Q | q | wyjście |
+| Najszybszy | ok. 60 ms | najmniejsze kawałki mowy |
+| Zrównoważony (domyślny) | ok. 75 ms | zalecany |
+| Najlepsza jakość | ok. 230 ms | oryginalny dekoder Chatterboxa |
 
-Przydatne opcje: `start.bat --preview` (od razu z podglądem), `--verbose` (każdy odczyt OCR w konsoli),
-`--select` (nowy obszar), `--voice pl-PL-ZofiaNeural`, `--voices` (lista polskich głosów).
+Głos rusza po pierwszych ~0,5 s gotowej mowy, a reszta zdania liczy się w tym czasie. *Tempo* przyspiesza mowę bez zmiany wysokości głosu.
 
-## Gdy coś nie czyta — strojenie
+## Strojenie
 
-Tryb `outline` zachowuje cienkie litery oraz polskie akcenty przy antyaliasingu.
-Szerokość szukanej obwódki dopasowuje do rozmiaru liter; małe napisy na ekranie
-4K są automatycznie powiększane do OCR. Pozostaw `upscale = 0`, aby korzystać
-z tego doboru. Po zmianie wielkości odtwarzacza wybierz obszar napisów ponownie
-i zostaw zapas nad oraz pod literami, aby nie obciąć kresek, kropek i ogonków.
+| Problem | Co zmienić |
+|---|---|
+| Lektor czyta urywki napisów | Stabilizacja: 3 (wymaga 3 zgodnych odczytów; domyślnie 2) |
+| Lektor zaczyna za późno | Stabilizacja: 1, gdy napisy pojawiają się od razu w całości. Do tego rozdzielczość wykrywania 640 i model OCR „PP-OCRv6 tiny”. |
+| Lektor powtarza linię, która została na ekranie | Włącz „Nie czytaj drugi raz linii…” (sekcja „Co czytać, a co pomijać”) |
+| Czyta tablice rejestracyjne, szyldy | „Odrzucaj tablice…” i „Czytaj tylko tekst na środku ekranu” (domyślnie włączone). Odrzucony tekst ma w podglądzie czerwoną ramkę z powodem. |
+| Czyta elementy HUD albo tło | Zawęź obszar napisów (przycisk **Obszar GTA VI**) albo podnieś minimalną pewność |
+| Nie zauważa zmiany napisu | Zwiększ czułość. Najpóźniej po 0,6 s napis i tak złapie odczyt kontrolny. |
+| Przy szybkich dialogach lektor nie nadąża | Polityka „Kolejka”, „Przyspieszaj, gdy lektor zostaje w tyle” i „Maksymalne tempo przy nadrabianiu” |
+| Źle wymawia nazwę | Dopisz ją do `slownik_wymowy.txt`. Działa od razu. |
 
-1. Włącz podgląd (**Ctrl+Alt+D**). Górny pasek to wycinek z gry, dolny to obraz dla OCR:
-   powinien pokazywać **czarne litery na białym tle** i niewiele więcej.
-2. Litery giną albo są dziurawe → w `config.toml` obniż `brightness` (np. 150) lub podnieś `outline` (np. 140).
-3. Łapie śmieci z tła → podnieś `brightness` (np. 190), obniż `outline` (np. 90) albo zawęź obszar.
-4. Napisy leżą na ciemnym pasku tła → spróbuj `preprocess = "gray"`.
-5. Zrób zrzut ekranu z napisem i uruchom `start.bat --test-ocr zrzut.png` — porówna wszystkie tryby
-   obróbki i zapisze obrazy do `debug_samples`.
-6. `save_samples = true` w sekcji `[debug]` zapisuje wycinek i tekst każdej przeczytanej kwestii — przyślij
-   kilka takich plików, to dostroimy progi.
+**Kolumny w Historii:**
+- **OCR** – czas odczytów potrzebnych do stabilnego wyniku.
+- **Głos** – czas do pierwszego kawałka dźwięku.
+- **Razem** – od klatki, na której zmienił się napis, do pierwszego dźwięku lektora.
 
-Lektor startuje mniej więcej sekundę po pojawieniu się napisu (OCR + synteza w chmurze). W konsoli przy każdej
-kwestii widać czas syntezy i opóźnienie.
+**Diagnostyka.** Zaznacz „Zapisuj diagnostykę odczytów”, a zobaczysz przy każdej kwestii wycinek obrazu: co lektor przeczytał, co pominął i co odrzucił. Przycisk **⏺ Nagraj** zapisuje scenę do pliku MP4 w folderze `nagrania`, żeby sprawdzić ją potem z innymi ustawieniami.
+
+## Testy
+
+**`testuj.bat`** sprawdza aplikację bez gry, w czterech częściach:
+1. logika: pamięć przeczytanych linii, kolejka, filtry,
+2. scenariusze z prawdziwym OCR na wygenerowanych filmach,
+3. zgodność szybkiego dekodera Chatterboxa z oryginałem,
+4. czas do pierwszego dźwięku w trzech trybach. Nagrania do odsłuchu trafiają do `probki\`.
 
 ## Problemy
 
-| Objaw | Co zrobić |
-|---|---|
-| Błąd 403 albo brak głosu | Microsoft zmienił zabezpieczenia Edge TTS: `.venv\Scripts\pip install -U edge-tts` |
-| Obraz z karty czarny | Wyłącz HDCP w PS5, sprawdź, czy konsola jest włączona |
-| „Nie mogę otworzyć urządzenia” | Kartę trzyma OBS albo Elgato Studio — zamknij je albo użyj wirtualnej kamery OBS |
-| Obraz z karty zepsuty | Ustaw `fourcc = "NV12"` (albo `"YUY2"`, `"MJPG"`) w sekcji `[source]` |
-| Brak polskiego OCR | Komenda PowerShell z punktu 3 instalacji |
-| Lektor gra nie tam, gdzie trzeba | `lista-urzadzen.bat`, potem `output_device = "Focusrite"` w `[tts]` |
-| Dźwięk lektora trzeszczy, ucina się albo znika | W `[tts]` ustaw `gapless = false` |
-| Lektor czyta dziwne znaki albo słowa | Zajrzyj do `lektor.log`: linie `OCR …` to surowe odczyty, `Napis:` to tekst przyjęty do kolejki, `do syntezatora:` to dokładnie to, co dostał Edge |
-| Skróty globalne nie działają | Używaj liter w oknie konsoli; nie uruchamiaj gry ani lektora jako administrator |
+- **„Failed to fetch”, zawieszony podgląd.** Niektóre programy (np. AdGuard, antywirusy) przechwytują połączenia z `127.0.0.1`. Dodaj w nich wyjątek dla `python.exe` albo dla adresu `127.0.0.1`.
+- **Czarny obraz z karty.** Na PS5 włączone jest HDCP albo kartę zajmuje inny program (OBS, Elgato Studio).
+- **Chatterbox się nie pojawia na liście głosów.** Uruchom `instaluj_chatterbox.bat`.
+  - Pierwsze ładowanie po starcie trwa ok. 20 s. W tym czasie lektor mówi Piperem.
+  - Kilka sekund trwa też zmiana trybu „Szybkość czy jakość”.
 
-## Pliki
+## Z czego korzysta
 
-- `start.bat`, `setup.bat`, `test-glosu.bat`, `lista-urzadzen.bat` — uruchamianie i instalacja
-- `config.toml` — wszystkie ustawienia (z opisami)
-- `roi.json` — zapamiętany obszar napisów (tworzy się sam)
-- `kolejka.json` — zapis nieprzeczytanych kwestii, automatycznie przywracany po restarcie
-- `lektor.log` — przebieg pracy: każdy odczyt OCR, przyjęte napisy, tekst wysłany do syntezatora, tempo i opóźnienie
-- `lektor/` — kod: `sources.py` (obraz), `preprocess.py` (obróbka), `ocr.py`, `textproc.py` (odsiew powtórek),
-  `tts.py` (Edge TTS), `speaker.py` (kolejka i tempo), `audio.py`, `app.py` (główna pętla)
-- `tests/` — testy (`pip install pytest`, potem `python -m pytest tests`)
+- OCR: [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) (modele PP-OCRv6), [RapidOCR](https://github.com/RapidAI/RapidOCR), [MNN](https://github.com/alibaba/MNN).
+- Głos:
+  - [Piper](https://github.com/OHF-Voice/piper1-gpl) (polskie głosy z [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)),
+  - [Chatterbox](https://github.com/resemble-ai/chatterbox) firmy Resemble AI, z dekoderem z Chatterbox-Turbo.
+- Szybka ścieżka Chatterboxa (grafy CUDA, strumieniowanie) jest napisana dla tej aplikacji (`lektor/chatterbox_*.py`).
+
+Każdy z tych projektów ma własną licencję (w jego repozytorium). Lektor tylko czyta obraz z gry i nie jest związany z Rockstar Games.
+
+Poprzednia wersja (Edge TTS + OCR Windows) nie jest już rozwijana. Zostaje w historii repozytorium.

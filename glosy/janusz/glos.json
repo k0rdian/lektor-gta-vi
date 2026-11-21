@@ -1,0 +1,15 @@
+{
+  "nazwa": "Janusz",
+  "utworzony": "2026-11-20 13:16",
+  "zrodlo": "20261120_131610_janusz.mp3",
+  "model": "v3",
+  "nagranie_s": 60.0,
+  "mowa_s": 17.5,
+  "fragment_s": [
+    40.5,
+    52.9
+  ],
+  "referencja_s": 8.2,
+  "segmentow": 4,
+  "ostrzezenia": []
+}

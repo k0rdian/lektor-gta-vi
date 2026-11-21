@@ -1,0 +1,26 @@
+# Słownik wymowy lektora: zapis z napisów = jak ma to przeczytać Piper.
+# Wielkość liter nie ma znaczenia. Dopisuj nazwy, które lektor przekręca.
+# Zmiany działają od razu, bez restartu aplikacji.
+
+Vice City = Wajs Siti
+Jason = Dżejson
+Lucia = Lusija
+Leonida = Leonida
+Miami = Majami
+OK = okej
+Jay = Dżej
+Donnie = Dony
+Hmmm = 
+Jasona = Dżejsona
+Jasonowi = Dżejsonowi
+Mhm = Tak
+Pelican = Pelikan
+Brian = Brajan
+Andy = Endi
+Cal = Kal
+Calowi = Kalowi
+Cala = Kala
+Joey = Dżołi
+V AP 工 口. =
+J26B7 =
+Donniem = Donnym
